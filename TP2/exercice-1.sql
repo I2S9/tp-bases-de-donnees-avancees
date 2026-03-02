@@ -141,3 +141,59 @@ INNER JOIN teaches te
 INNER JOIN teacher i ON i.id = te.id
 GROUP BY i.name, i.id
 ORDER BY COUNT(*) DESC;
+
+-- Question 15 : Pour chaque enseignant, meme sans cours assures, afficher le nombre total d'etudiants ayant suivi ses cours.
+-- Si un etudiant a suivi deux fois un cours avec le meme enseignant, il est compte deux fois.
+-- Trier le resultat par ordre decroissant.
+SELECT i.name, COUNT(t.id) AS total_etudiants
+FROM teacher i
+LEFT JOIN teaches te ON te.id = i.id
+LEFT JOIN takes t
+  ON t.course_id = te.course_id
+ AND t.sec_id = te.sec_id
+ AND t.semester = te.semester
+ AND t.year = te.year
+GROUP BY i.name, i.id
+ORDER BY COUNT(t.id) DESC;
+
+-- Question 16 : Pour chaque enseignant, afficher le nombre total de grades A qu'il a attribues.
+WITH mytakes AS (
+    SELECT id, course_id, sec_id, semester, year, grade
+    FROM takes
+    WHERE grade = 'A'
+)
+SELECT i.name, COUNT(mt.course_id) AS total_grades_a
+FROM teacher i
+LEFT JOIN teaches te ON te.id = i.id
+LEFT JOIN mytakes mt
+  ON mt.course_id = te.course_id
+ AND mt.sec_id = te.sec_id
+ AND mt.semester = te.semester
+ AND mt.year = te.year
+GROUP BY i.name, i.id
+ORDER BY COUNT(mt.course_id) DESC;
+
+-- Question 17 : Afficher toutes les paires enseignant-eleve ou un eleve a suivi le cours de l'enseignant, ainsi que le nombre de fois.
+SELECT i.name, s.name, COUNT(*) AS nb_cours
+FROM teacher i
+JOIN teaches te ON te.id = i.id
+JOIN takes t
+  ON t.course_id = te.course_id
+ AND t.sec_id = te.sec_id
+ AND t.semester = te.semester
+ AND t.year = te.year
+JOIN student s ON s.id = t.id
+GROUP BY i.name, s.name;
+
+-- Question 18 : Afficher les paires enseignant-eleve ou l'eleve a suivi au moins deux cours dispenses par cet enseignant.
+SELECT i.name, s.name, COUNT(*) AS nb_cours
+FROM teacher i
+JOIN teaches te ON te.id = i.id
+JOIN takes t
+  ON t.course_id = te.course_id
+ AND t.sec_id = te.sec_id
+ AND t.semester = te.semester
+ AND t.year = te.year
+JOIN student s ON s.id = t.id
+GROUP BY i.name, s.name
+HAVING COUNT(*) >= 2;
