@@ -131,6 +131,55 @@ def compute_all_super_keys(F: list, R) -> list:
     return result
 
 
+def is_bcnf_relation(F: list, R) -> tuple:
+    """
+    Retourne (True, {}) si R est en BCNF, sinon (False, [alpha, beta])
+    pour la DF alpha -> beta qui viole la BCNF.
+    """
+    R_set = set(R)
+    for alpha, beta in F:
+        if alpha <= R_set and beta <= R_set and (beta - alpha):
+            if not is_super_key(F, R, alpha):
+                return False, [alpha, beta]
+    return True, {}
+
+
+def is_bcnf_relations(F: list, T: list) -> tuple:
+    """
+    Retourne (True, {}) si le schéma T est en BCNF, sinon (False, R)
+    pour la relation R qui viole la BCNF.
+    """
+    for R in T:
+        ok, violation = is_bcnf_relation(F, R)
+        if not ok:
+            return False, set(R)
+    return True, {}
+
+
+def compute_bcnf_decomposition(F: list, T: list) -> list:
+    """
+    Implémente l'algorithme de décomposition en BCNF.
+    Retourne la liste des relations après décomposition.
+    """
+    OUT = [set(R) for R in T]
+    size = 0
+    while size != len(OUT):
+        size = len(OUT)
+        for R in list(OUT):
+            ok, violation = is_bcnf_relation(F, R)
+            if not ok:
+                alpha, beta = violation
+                R1 = alpha | beta
+                R2 = R - beta
+                if R1 not in OUT:
+                    OUT.append(R1)
+                if R2 and R2 not in OUT:
+                    OUT.append(R2)
+                OUT.remove(R)
+                break
+    return OUT
+
+
 # --- Tests ---
 if __name__ == "__main__":
     print("=== Dépendances fonctionnelles ===")
@@ -164,4 +213,13 @@ if __name__ == "__main__":
         print("\t", ck)
 
     print("\n=== Test is_dependency: A détermine H ? ===")
-    print(is_dependency(mydependencies, {'A'}, {'H'}))  # True (A->B->H)
+    print(is_dependency(mydependencies, {'A'}, {'H'}))
+
+    print("\n=== Schéma en BCNF ? ===")
+    ok, viol = is_bcnf_relations(mydependencies, myrelations)
+    print(f"is_bcnf_relations: {ok}", f"(relation violante: {viol})" if not ok else "")
+
+    print("\n=== Décomposition BCNF de R(A,B,C,G,H,I) ===")
+    decomp = compute_bcnf_decomposition(mydependencies, [myrelations[0]])
+    for i, rel in enumerate(decomp):
+        print(f"\tR{i+1}: {sorted(rel)}")
